@@ -1,0 +1,12 @@
+{
+  "name": "node-manager",
+  "version": "1.0.0",
+  "description": "A node manager that will make sure other projects stay alive",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Ype Oomes",
+  "license": "ISC"
+}
