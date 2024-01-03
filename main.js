@@ -33,7 +33,7 @@ function startNode(index) {
         });
         nodes[index].running = true;
     } catch (err) { logError(err); return; }
-    nodes[index].proc.on("exit", err => { logInfo("exit"); restartNode(folder);});
+    nodes[index].proc.on("exit", err => { logInfo(folder + " stopped running..."); restartNode(folder);});
     nodes[index].proc.on("error", err => { logError(err); });
     nodes[index].proc.on("message", msg => { logInfo(msg); });
 }
@@ -45,6 +45,7 @@ function restartNode(folder) {
     nodes[found].running = false;
     if (found < 0) { return; }
     startNode(found);
+    logInfo("Restarted " + folder)
 }
 
 async function start() {
@@ -65,8 +66,8 @@ async function start() {
 
     // Start nodes
     for (let i = 0; i < nodes.length; i++) { startNode(i); }
-    logData(nodes);
 
+    // Keep program alive
     logInfo("Nodes initialized successfully!");
     while (nodesBusy() || shouldRun) { await sleep(1); } // Keep program alive so bots can keep responding without being on the main call thread
     logInfo("Program stopped!");
