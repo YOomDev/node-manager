@@ -8,5 +8,7 @@
   },
   "keywords": [],
   "author": "Ype Oomes",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+  }
 }
