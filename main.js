@@ -84,7 +84,7 @@ function equals(first, second) {
     }
 }
 
-async function sleep(seconds) { return new Promise(resolve => setTimeout(resolve, Math.min(seconds, 0) * 1000)); }
+async function sleep(seconds) { return new Promise(resolve => setTimeout(resolve, Math.max(seconds, 0) * 1000)); }
 function getTimeString() { return (new Date()).toLocaleTimeString(); }
 function logError(err)   { console.error(`[${getTimeString()}] ERROR:\t`, err ); }
 function logWarning(err) { console.error(`[${getTimeString()}] Warning:`, err ); }
