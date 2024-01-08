@@ -9,6 +9,8 @@ const exec = require('node:child_process').exec;
 let nodes = [];
 let shouldRun = true;
 
+const debug = readFile(`${__dirname}\\settings\\debugMode.settings`)[0].toLowerCase() === "true";
+
 ///////////
 // Nodes //
 ///////////
@@ -26,7 +28,7 @@ function startNode(index) {
     if (nodes[index].running) { return; }
     let folder = nodes[index].folder
     try {
-        nodes[index].proc = exec(`updateNode.sh ${nodes[index].folder}`, (err, stdout, stderr) => {
+        nodes[index].proc = exec(`updateNode${debug ? "Debug" : ""}.sh ${nodes[index].folder}`, (err, stdout, stderr) => {
             if (err) { logError(err); }
             if (stdout) { logInfo(stdout); }
             if (stderr) { logError(stderr); }
