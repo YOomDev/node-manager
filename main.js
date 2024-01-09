@@ -41,8 +41,8 @@ function startNode(index) {
     nodes[index].proc.on("message", msg => { logInfo(msg); });
 
     // Create file logs
-    nodes[index].proc.stdout('data', msg => { logInfo("STDout" + msg); });
-    nodes[index].proc.stderr('data', msg => { logError("STDerr" + msg); });
+    nodes[index].proc.stdout.on('data', msg => { logInfo("STDout" + msg); });
+    nodes[index].proc.stderr.on('data', msg => { logError("STDerr" + msg); });
 }
 
 function restartNode(folder) {
