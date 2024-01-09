@@ -35,9 +35,14 @@ function startNode(index) {
         });
         nodes[index].running = true;
     } catch (err) { logError(err); return; }
+    // Log restarts and such
     nodes[index].proc.on("exit", err => { logInfo(folder + " stopped running..."); restartNode(folder);});
     nodes[index].proc.on("error", err => { logError(err); });
     nodes[index].proc.on("message", msg => { logInfo(msg); });
+
+    // Create file logs
+    nodes[index].proc.stdout('data', msg => { logInfo("STDout" + msg); });
+    nodes[index].proc.stderr('data', msg => { logError("STDerr" + msg); });
 }
 
 function restartNode(folder) {
