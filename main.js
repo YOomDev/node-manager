@@ -9,8 +9,6 @@ const exec = require('node:child_process').exec;
 let nodes = [];
 let shouldRun = true;
 
-const debug = readFile(`${__dirname}\\settings\\debugMode.settings`)[0].toLowerCase() === "true";
-
 ///////////
 // Nodes //
 ///////////
@@ -20,15 +18,15 @@ function nodesBusy() {
     return false;
 }
 
-function createNode(folder) {
-    nodes.push({ folder: folder, running: false });
+function createNode(folder, name) {
+    nodes.push({ name: name, folder: folder, running: false, ready: false, log: "" });
 }
 
-function startNode(index) {
+async function startNode(index) {
     if (nodes[index].running) { return; }
     let folder = nodes[index].folder
     try {
-        nodes[index].proc = exec(`updateNode${debug ? "Debug" : ""}.sh ${nodes[index].folder}`, (err, stdout, stderr) => {
+        nodes[index].proc = exec(`updateNode.sh ${nodes[index].folder}`, (err, stdout, stderr) => {
             if (err) { logError(err); }
             if (stdout) { logInfo(stdout); }
             if (stderr) { logError(stderr); }
@@ -36,13 +34,18 @@ function startNode(index) {
         nodes[index].running = true;
     } catch (err) { logError(err); return; }
     // Log restarts and such
-    nodes[index].proc.on("exit", err => { logInfo(folder + " stopped running..."); restartNode(folder);});
-    nodes[index].proc.on("error", err => { logError(err); });
-    nodes[index].proc.on("message", msg => { logInfo(msg); });
+    nodes[index].proc.on("exit", err => { logInfo(folder + " stopped running..."); restartNode(folder); nodes[index].ready = true; });
+
+    nodes[index].log = "";
+    nodes[index].proc = exec(`node ${folder}`, (err, stdout, stderr) => {
+        if (err) { logError(err); }
+        if (stdout) { logInfo(stdout); }
+        if (stderr) { logError(stderr); }
+    });
 
     // Create file logs
-    nodes[index].proc.stdout.on('data', msg => { logInfo("STDout" + msg); });
-    nodes[index].proc.stderr.on('data', msg => { logError("STDerr" + msg); });
+    nodes[index].proc.stdout.on('data', msg => { logInfo(`${nodes[index].name}: ${msg}`); });
+    nodes[index].proc.stderr.on('data', msg => { logError(`${nodes[index].name}: ${msg}`); });
 }
 
 function restartNode(folder) {
