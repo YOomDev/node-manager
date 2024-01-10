@@ -22,9 +22,16 @@ function createNode(folder, name) {
     nodes.push({ name: name, folder: folder, running: false, ready: false, log: "" });
 }
 
+async function awaitReady(index) {
+    while(!nodes[index].ready) {
+        await sleep(0.25);
+    }
+}
+
 async function startNode(index) {
     if (nodes[index].running) { return; }
-    let folder = nodes[index].folder
+    let folder = nodes[index].folder;
+
     try {
         nodes[index].proc = exec(`updateNode.sh ${nodes[index].folder}`, (err, stdout, stderr) => {
             if (err) { logError(err); }
@@ -34,7 +41,9 @@ async function startNode(index) {
         nodes[index].running = true;
     } catch (err) { logError(err); return; }
     // Log restarts and such
-    nodes[index].proc.on("exit", err => { logInfo(folder + " stopped running..."); restartNode(folder); nodes[index].ready = true; });
+    nodes[index].proc.on("exit", err => { logInfo(folder + " completed updating."); nodes[index].ready = true; });
+
+    await awaitReady(index);
 
     nodes[index].log = "";
     nodes[index].proc = exec(`node ${folder}`, (err, stdout, stderr) => {
@@ -42,10 +51,11 @@ async function startNode(index) {
         if (stdout) { logInfo(stdout); }
         if (stderr) { logError(stderr); }
     });
+    nodes[index].proc.on("exit", err => { logInfo(folder + " stopped running..."); restartNode(folder); nodes[index].ready = false; });
 
     // Create file logs
-    nodes[index].proc.stdout.on('data', msg => { logInfo(`${nodes[index].name}: ${msg}`); });
-    nodes[index].proc.stderr.on('data', msg => { logError(`${nodes[index].name}: ${msg}`); });
+    nodes[index].proc.stdout.on('data', msg => { logInfoToFile(nodes[index].log, `${nodes[index].name}: ${msg}`, folder); });
+    nodes[index].proc.stderr.on('data', msg => { logErrorToFile(nodes[index].log, `${nodes[index].name}: ${msg}`); });
 }
 
 function restartNode(folder) {
@@ -69,7 +79,7 @@ async function start() {
             const type = params[params.length - 1];
             if (equals(type, "node")) {
                 const folder = readFile(__dirname + "\\nodes\\" + nodeList[i])[0];
-                createNode(folder);
+                createNode(folder, nodeList[i]);
             }
         }
     }
@@ -94,6 +104,10 @@ function equals(first, second) {
     }
 }
 
+function logErrorToFile(log, err)   { logError(err); }
+function logWarningToFile(log, err) { logWarning(err); }
+function logInfoToFile(log, info)   { logInfo(info); }
+
 async function sleep(seconds) { return new Promise(resolve => setTimeout(resolve, Math.max(seconds, 0) * 1000)); }
 function getTimeString() { return (new Date()).toLocaleTimeString(); }
 function logError(err)   { console.error(`[${getTimeString()}] ERROR:\t`, err ); }
@@ -108,7 +122,7 @@ function readFile(path) {
         for (let i = 0; i < data.length; i++) {
             let line = data[i];
             if (line.endsWith("\r")) { line = line.substring(0, line.length - 1); } // Make sure lines don't end with the first half of the windows end line characters
-            while (line.endsWith(" ")) { line = line.substring(0, line.length - 1); } // Make sure lines don't end with a space character
+            line = line.trim(); // Make sure lines don't end with a space character
             if (line.length) { lines.push(line); }
         }
         return lines;
