@@ -5,6 +5,8 @@
 
 const fs = require('fs');
 const exec = require('node:child_process').exec;
+const spawn = require('node:child_process').spawn;
+const PassThrough = require('stream').PassThrough
 
 let nodes = [];
 let shouldRun = true;
@@ -33,7 +35,7 @@ async function startNode(index) {
     let folder = nodes[index].folder;
 
     try {
-        nodes[index].proc = exec(`updateNode.sh ${nodes[index].folder}`, (err, stdout, stderr) => {
+        nodes[index].proc = exec(`updateNode.sh ${nodes[index].folder}`, { } , (err, stdout, stderr) => {
             if (err) { logError(err); }
             if (stdout) { logInfo(stdout); }
             if (stderr) { logError(stderr); }
@@ -44,18 +46,11 @@ async function startNode(index) {
     nodes[index].proc.on("exit", err => { logInfo(folder + " completed updating."); nodes[index].ready = true; });
 
     await awaitReady(index);
-
-    nodes[index].log = "";
-    nodes[index].proc = exec(`node ${folder}`, (err, stdout, stderr) => {
-        if (err) { logError(err); }
-        if (stdout) { logInfo(stdout); }
-        if (stderr) { logError(stderr); }
-    });
-    nodes[index].proc.on("exit", err => { logInfo(folder + " stopped running..."); restartNode(folder); nodes[index].ready = false; });
-
-    // Create file logs
-    nodes[index].proc.stdout.on('data', msg => { logInfoToFile(nodes[index].log, `${nodes[index].name}: ${msg}`, folder); });
-    nodes[index].proc.stderr.on('data', msg => { logErrorToFile(nodes[index].log, `${nodes[index].name}: ${msg}`); });
+    nodes[index].ready = false;
+    const now = new Date();
+    let fileHandle = fs.openSync(`logs\\${nodes[index].name}\\${now.getFullYear()}-${now.getMonth()}-${now.getDay()}_${getTimeString(now).replaceAll(":", ".")}.txt`, 'w');
+    nodes[index].proc = spawn(`node`, [folder], { stdio: ['ignore', fileHandle, fileHandle] });
+    nodes[index].proc.on("exit", async err => { logInfo(folder + " stopped running..."); await sleep(0.5); fs.closeSync(fileHandle); restartNode(folder); });
 }
 
 function restartNode(folder) {
@@ -109,7 +104,7 @@ function logWarningToFile(log, err) { logWarning(err); }
 function logInfoToFile(log, info)   { logInfo(info); }
 
 async function sleep(seconds) { return new Promise(resolve => setTimeout(resolve, Math.max(seconds, 0) * 1000)); }
-function getTimeString() { return (new Date()).toLocaleTimeString(); }
+function getTimeString(date = new Date()) { return date.toLocaleTimeString(); }
 function logError(err)   { console.error(`[${getTimeString()}] ERROR:\t`, err ); }
 function logWarning(err) { console.error(`[${getTimeString()}] Warning:`, err ); }
 function logInfo(info)   { console.log  (`[${getTimeString()}] Info:\t` , info); }
