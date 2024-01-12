@@ -43,14 +43,14 @@ async function startNode(index) {
         nodes[index].running = true;
     } catch (err) { logError(err); return; }
     // Log restarts and such
-    nodes[index].proc.on("exit", err => { logInfo(folder + " completed updating."); nodes[index].ready = true; });
+    nodes[index].proc.on("exit", err => { logInfo(`${folder} completed updating.`); nodes[index].ready = true; });
 
     await awaitReady(index);
     nodes[index].ready = false;
     const now = new Date();
     let fileHandle = fs.openSync(`logs\\${nodes[index].name.substring(0, nodes[index].name.length-5)}\\${now.getFullYear()}-${now.getMonth()}-${now.getDay()}_${getTimeString(now).replaceAll(":", ".")}.txt`, 'w');
     nodes[index].proc = spawn(`node`, [folder], { stdio: ['ignore', fileHandle, fileHandle] });
-    nodes[index].proc.on("exit", async err => { logInfo(folder + " stopped running..."); await sleep(0.5); fs.closeSync(fileHandle); restartNode(folder); });
+    nodes[index].proc.on("exit", async err => { logInfo(`${folder} stopped running...`); await sleep(0.5); fs.closeSync(fileHandle); restartNode(folder); });
 }
 
 function restartNode(folder) {
@@ -60,20 +60,20 @@ function restartNode(folder) {
     nodes[found].running = false;
     if (found < 0) { return; }
     startNode(found);
-    logInfo("Restarted " + folder)
+    logInfo(`Restarted ${folder}`)
 }
 
 async function start() {
     logInfo("Console started, initializing bots...");
 
     { // Load nodes to start
-        let nodeList = listFilesInFolder(__dirname + "\\nodes\\");
+        let nodeList = listFilesInFolder(`${__dirname}\\nodes\\`);
         for (let i = 0; i < nodeList.length; i++) {
             let params = nodeList[i].split(".");
             if (params.length < 1) { continue; }
             const type = params[params.length - 1];
             if (equals(type, "node")) {
-                const folder = readFile(__dirname + "\\nodes\\" + nodeList[i])[0];
+                const folder = readFile(`${__dirname}\\nodes\\${nodeList[i]}`)[0];
                 createNode(folder, nodeList[i]);
             }
         }
@@ -98,10 +98,6 @@ function equals(first, second) {
         default: return false;
     }
 }
-
-function logErrorToFile(log, err)   { logError(err); }
-function logWarningToFile(log, err) { logWarning(err); }
-function logInfoToFile(log, info)   { logInfo(info); }
 
 async function sleep(seconds) { return new Promise(resolve => setTimeout(resolve, Math.max(seconds, 0) * 1000)); }
 function getTimeString(date = new Date()) { return date.toLocaleTimeString(); }
