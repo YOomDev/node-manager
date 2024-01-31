@@ -48,7 +48,7 @@ async function startNode(index) {
     await awaitReady(index);
     nodes[index].ready = false;
     const now = new Date();
-    let fileHandle = fs.openSync(`logs\\${nodes[index].name.substring(0, nodes[index].name.length-5)}\\${now.getFullYear()}-${now.getMonth()}-${now.getDay()}_${getTimeString(now).replaceAll(":", ".")}.txt`, 'w');
+    let fileHandle = fs.openSync(`logs\\${nodes[index].name.substring(0, nodes[index].name.length-5)}\\${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}_${getTimeString(now).replaceAll(":", ".")}.txt`, 'w');
     nodes[index].proc = spawn(`node`, [folder], { stdio: ['ignore', fileHandle, fileHandle] });
     nodes[index].proc.on("exit", async err => { logInfo(`${folder} stopped running...`); await sleep(0.5); fs.closeSync(fileHandle); restartNode(folder); });
 }
