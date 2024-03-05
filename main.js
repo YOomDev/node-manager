@@ -21,9 +21,7 @@ function nodesBusy() {
     return false;
 }
 
-function createNode(folder, name) {
-    nodes.push({ name: name, folder: folder, running: false, ready: false, log: "" });
-}
+function createNode(folder, name) { nodes.push({ name: name, folder: folder, running: false, ready: false, log: "" }); }
 
 async function awaitReady(index) {
     while(!nodes[index].ready) {
