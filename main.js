@@ -6,10 +6,11 @@
 const fs = require('fs');
 const exec = require('node:child_process').exec;
 const spawn = require('node:child_process').spawn;
-const PassThrough = require('stream').PassThrough
 
 let nodes = [];
 let shouldRun = true;
+
+const filetype = "node";
 
 ///////////
 // Nodes //
@@ -32,10 +33,11 @@ async function awaitReady(index) {
 
 async function startNode(index) {
     if (nodes[index].running) { return; }
-    let folder = nodes[index].folder;
+    const folder = nodes[index].folder;
+    const name = nodes[index].name;
 
     try {
-        nodes[index].proc = exec(`updateNode.sh ${nodes[index].folder}`, { } , (err, stdout, stderr) => {
+        nodes[index].proc = exec(`updateNode.sh ${folder}`, { } , (err, stdout, stderr) => {
             if (err) { logError(err); }
             if (stdout) { logInfo(stdout); }
             if (stderr) { logError(stderr); }
@@ -48,19 +50,19 @@ async function startNode(index) {
     await awaitReady(index);
     nodes[index].ready = false;
     const now = new Date();
-    let fileHandle = fs.openSync(`logs\\${nodes[index].name.substring(0, nodes[index].name.length-5)}\\${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}_${getTimeString(now).replaceAll(":", ".")}.txt`, 'w');
+    let fileHandle = fs.openSync(`logs\\${name.substring(0, nodes[index].name.length-(filetype.length + 1))}\\${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}_${getTimeString(now).replaceAll(":", ".")}.txt`, 'w');
     nodes[index].proc = spawn(`node`, [folder], { stdio: ['ignore', fileHandle, fileHandle] });
-    nodes[index].proc.on("exit", async err => { logInfo(`${folder} stopped running...`); await sleep(0.5); fs.closeSync(fileHandle); restartNode(folder); });
+    nodes[index].proc.on("exit", async err => { logInfo(`${folder} stopped running...`); await sleep(0.5); fs.closeSync(fileHandle); restartNode(name, folder); });
 }
 
-function restartNode(folder) {
+function restartNode(name, folder) {
     if (!shouldRun) { return; }
     let found = -1;
     for (let i = 0; i < nodes.length; i++) { if (equals(nodes[i].folder, folder)) { found = i; break;} }
     nodes[found].running = false;
     if (found < 0) { return; }
     startNode(found);
-    logInfo(`Restarted ${folder}`)
+    logInfo(`Restarted ${name}`)
 }
 
 async function start() {
@@ -72,7 +74,7 @@ async function start() {
             let params = nodeList[i].split(".");
             if (params.length < 1) { continue; }
             const type = params[params.length - 1];
-            if (equals(type, "node")) {
+            if (equals(type, filetype)) {
                 const folder = readFile(`${__dirname}\\nodes\\${nodeList[i]}`)[0];
                 createNode(folder, nodeList[i]);
             }
@@ -80,7 +82,7 @@ async function start() {
     }
 
     // Start nodes
-    for (let i = 0; i < nodes.length; i++) { startNode(i); }
+    for (let i = 0; i < nodes.length; i++) { startNode(i).catch(err => { logError(err); }); }
 
     // Keep program alive
     logInfo("Nodes initialized successfully!");
