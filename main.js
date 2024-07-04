@@ -56,7 +56,7 @@ async function startNode(index) {
 function restartNode(name, folder) {
     if (!shouldRun) { return; }
     let found = -1;
-    for (let i = 0; i < nodes.length; i++) { if (equals(nodes[i].folder, folder)) { found = i; break;} }
+    for (let i = 0; i < nodes.length; i++) { if (equals(nodes[i].folder, folder)) { found = i; break; } }
     nodes[found].running = false;
     if (found < 0) { return; }
     startNode(found);
