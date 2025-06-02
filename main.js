@@ -48,7 +48,7 @@ async function startNode(index) {
     await awaitReady(index);
     nodes[index].ready = false;
     const now = new Date();
-    let fileHandle = fs.openSync(`logs\\${name.substring(0, nodes[index].name.length-(filetype.length + 1))}\\${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}_${getTimeString(now).replaceAll(":", ".")}.txt`, 'w');
+    let fileHandle = fs.openSync(`logs\\${name.substring(0, nodes[index].name.length-(filetype.length + 1))}\\${getTimeString(now).replaceAll(":", ".")}.txt`, 'w');
     nodes[index].proc = spawn(`node`, [folder], { stdio: ['ignore', fileHandle, fileHandle], cwd: folder });
     nodes[index].proc.on("exit", async err => { logInfo(`${folder} stopped running...`); await sleep(0.5); fs.closeSync(fileHandle); restartNode(name, folder); });
 }
@@ -100,7 +100,7 @@ function equals(first, second) {
 }
 
 async function sleep(seconds) { return new Promise(resolve => setTimeout(resolve, Math.max(seconds, 0) * 1000)); }
-function getTimeString(date = new Date()) { return date.toLocaleTimeString(); }
+function getTimeString(date = new Date()) { return `${date.getDate()}-${1 + date.getMonth()}-${date.getFullYear()} ${date.toLocaleTimeString()}`.toString(); }
 function logError(err)   { console.error(`[${getTimeString()}] ERROR:\t`, err ); }
 function logWarning(err) { console.error(`[${getTimeString()}] Warning:`, err ); }
 function logInfo(info)   { console.log  (`[${getTimeString()}] Info:\t` , info); }
